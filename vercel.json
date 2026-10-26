@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "name": "adah-jewels",
   "cleanUrls": true,
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" },
