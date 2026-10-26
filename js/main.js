@@ -46,19 +46,15 @@ const toastMessage = document.getElementById('toastMessage');
 window.loadProductsFromStorage = function() {
   const saved = localStorage.getItem(MASTER_STORAGE_KEY);
 
-  if (saved) {
+  if (saved !== null) {
     try {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length >= 10) {
-        window.allProducts = parsed;
-      } else {
-        window.allProducts = initializeFromDefaults();
-      }
+      window.allProducts = Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      window.allProducts = initializeFromDefaults();
+      window.allProducts = [];
     }
   } else {
-    window.allProducts = initializeFromDefaults();
+    window.allProducts = [];
   }
 
   // Save canonical master
@@ -70,7 +66,7 @@ async function syncWithServer() {
     const res = await fetch('/api/products');
     if (res.ok) {
       const serverProducts = await res.json();
-      if (Array.isArray(serverProducts) && serverProducts.length > 0) {
+      if (Array.isArray(serverProducts)) {
         window.allProducts = serverProducts;
         localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(window.allProducts));
         window.refreshStorefront();
@@ -80,55 +76,7 @@ async function syncWithServer() {
 }
 
 function initializeFromDefaults() {
-  const custom = [
-    {
-      id: 'AJ-ADM-01',
-      name: 'Cashmere Pearl Choker',
-      price: 180,
-      stock: 20,
-      inStock: true,
-      category: 'Necklaces',
-      tier: 'Luxury',
-      image: '',
-      type: 'necklaces',
-      featured: true,
-      desc: 'Handcrafted luxury freshwater pearl choker with gold floral clasp.'
-    },
-    {
-      id: 'AJ-ROYAL-01',
-      name: 'Royal Rose Gold Choker',
-      price: 150,
-      stock: 0,
-      inStock: false,
-      category: 'Scrunchies',
-      tier: 'Luxury',
-      image: '',
-      type: 'scrunchies',
-      featured: true,
-      desc: 'Handcrafted luxury rose gold choker with delicate crystal accents.'
-    },
-    {
-      id: 'AJ-NEW-01',
-      name: 'Antique Silver Pearl & Ghungroo Dangler Earrings',
-      price: 120,
-      stock: 15,
-      inStock: true,
-      category: 'Earrings',
-      tier: '₹120',
-      image: 'assets/col_earrings.jpg',
-      type: 'earrings',
-      featured: true,
-      desc: 'Traditional oxidized silver-tone dangler earrings featuring delicate hanging pearl beads and chime bells.'
-    }
-  ];
-
-  const full = [...custom, ...DEFAULT_PRODUCTS];
-  return full.map(p => ({
-    ...p,
-    stock: typeof p.stock === 'number' ? p.stock : 15,
-    inStock: typeof p.inStock === 'boolean' ? p.inStock : (typeof p.stock === 'number' ? p.stock > 0 : true),
-    featured: typeof p.featured === 'boolean' ? p.featured : true
-  }));
+  return [];
 }
 
 function initApp() {
@@ -194,8 +142,8 @@ function renderRunningShowcase() {
 
   if (items.length === 0) {
     marqueeTrack.innerHTML = `
-      <div style="padding: 24px 0; text-align: center; width: 100%; color: var(--text-muted); font-size: 0.9rem;">
-        No items currently featured in the Running Showcase. Enable 'Showcase' on any piece in the Admin Portal to feature it here.
+      <div style="padding: 24px 0; text-align: center; width: 100%; color: var(--taupe-accent); font-size: 0.95rem; font-family: var(--font-serif); letter-spacing: 0.15em; font-weight: 500;">
+        ✦ NEW COLLECTION DROPPING SOON ✦
       </div>
     `;
     return;
@@ -251,6 +199,19 @@ function renderRunningShowcase() {
 
 function renderProductsGrid() {
   if (!productGrid) return;
+
+  if (!window.allProducts || window.allProducts.length === 0) {
+    productGrid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 80px 20px; color: var(--text-muted);">
+        <i class="fa-solid fa-gem" style="font-size: 3.5rem; margin-bottom: 16px; color: var(--taupe-accent); opacity: 0.5;"></i>
+        <h3 style="font-family: var(--font-serif); font-size: 1.8rem; color: var(--text-dark); margin-bottom: 10px;">Collection In Preparation</h3>
+        <p style="max-width: 480px; margin: 0 auto; line-height: 1.6; font-size: 0.95rem;">
+          Our handcrafted luxury pieces are being prepared in the studio. Handpicked jewellery added via the Admin Portal will be unveiled here.
+        </p>
+      </div>
+    `;
+    return;
+  }
 
   const filtered = (window.allProducts || []).filter(p => {
     // Hide products that have Showcase turned OFF in Admin

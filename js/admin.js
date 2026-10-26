@@ -112,7 +112,7 @@ async function syncWithServer() {
     const res = await fetch('/api/products');
     if (res.ok) {
       const serverProducts = await res.json();
-      if (Array.isArray(serverProducts) && serverProducts.length > 0) {
+      if (Array.isArray(serverProducts)) {
         adminProducts = serverProducts;
         localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(adminProducts));
         updateKPIs();
@@ -126,22 +126,18 @@ async function syncWithServer() {
 function loadAdminProducts() {
   const saved = localStorage.getItem(MASTER_STORAGE_KEY);
 
-  if (saved) {
+  if (saved !== null) {
     try {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length >= 10) {
-        adminProducts = parsed;
-      } else {
-        adminProducts = initializeFromDefaults();
-      }
+      adminProducts = Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      adminProducts = initializeFromDefaults();
+      adminProducts = [];
     }
   } else {
-    adminProducts = initializeFromDefaults();
+    adminProducts = [];
   }
 
-  // Ensure stock fields exist
+  // Ensure stock fields exist on any custom items
   adminProducts.forEach(item => {
     if (typeof item.stock !== 'number') item.stock = 15;
     if (typeof item.inStock !== 'boolean') item.inStock = item.stock > 0;
@@ -152,55 +148,7 @@ function loadAdminProducts() {
 }
 
 function initializeFromDefaults() {
-  const custom = [
-    {
-      id: 'AJ-ADM-01',
-      name: 'Cashmere Pearl Choker',
-      price: 180,
-      stock: 20,
-      inStock: true,
-      category: 'Necklaces',
-      tier: 'Luxury',
-      image: '',
-      type: 'necklaces',
-      featured: true,
-      desc: 'Handcrafted luxury freshwater pearl choker with gold floral clasp.'
-    },
-    {
-      id: 'AJ-ROYAL-01',
-      name: 'Royal Rose Gold Choker',
-      price: 150,
-      stock: 0,
-      inStock: false,
-      category: 'Scrunchies',
-      tier: 'Luxury',
-      image: '',
-      type: 'scrunchies',
-      featured: true,
-      desc: 'Handcrafted luxury rose gold choker with delicate crystal accents.'
-    },
-    {
-      id: 'AJ-NEW-01',
-      name: 'Antique Silver Pearl & Ghungroo Dangler Earrings',
-      price: 120,
-      stock: 15,
-      inStock: true,
-      category: 'Earrings',
-      tier: '₹120',
-      image: 'assets/col_earrings.jpg',
-      type: 'earrings',
-      featured: true,
-      desc: 'Traditional oxidized silver-tone dangler earrings featuring delicate hanging pearl beads and chime bells.'
-    }
-  ];
-
-  const full = [...custom, ...DEFAULT_PRODUCTS];
-  return full.map(p => ({
-    ...p,
-    stock: typeof p.stock === 'number' ? p.stock : 15,
-    inStock: typeof p.inStock === 'boolean' ? p.inStock : (typeof p.stock === 'number' ? p.stock > 0 : true),
-    featured: typeof p.featured === 'boolean' ? p.featured : true
-  }));
+  return [];
 }
 
 function saveAdminProducts(notify = true) {
@@ -325,6 +273,23 @@ function getStatusBadge(item) {
 
 function renderQuickStockTable() {
   if (!quickStockTableBody) return;
+
+  if (adminProducts.length === 0) {
+    quickStockTableBody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
+          <div style="font-size: 2rem; margin-bottom: 8px; color: var(--accent-taupe);"><i class="fa-solid fa-gem"></i></div>
+          <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 4px;">Your inventory is currently empty</div>
+          <div style="font-size: 0.82rem; margin-bottom: 14px;">Add your own products in the "Add New Product" tab to start managing stock.</div>
+          <button class="btn-primary-action" onclick="switchAdminTab('add-product')" style="margin: 0 auto; display: inline-flex;">
+            <i class="fa-solid fa-plus"></i> Add Your First Piece
+          </button>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
   const displayItems = adminProducts.slice(0, 10);
 
   quickStockTableBody.innerHTML = displayItems.map(item => `
@@ -405,8 +370,13 @@ function renderInventoryTable() {
   if (filtered.length === 0) {
     fullInventoryTableBody.innerHTML = `
       <tr>
-        <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted);">
-          No jewellery products found matching your active filter.
+        <td colspan="9" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
+          <div style="font-size: 2rem; margin-bottom: 8px; color: var(--accent-taupe);"><i class="fa-solid fa-gem"></i></div>
+          <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 4px;">No jewellery products in catalogue</div>
+          <div style="font-size: 0.82rem; margin-bottom: 14px;">Only the pieces you add will appear in inventory and on the storefront.</div>
+          <button class="btn-primary-action" onclick="switchAdminTab('add-product')" style="margin: 0 auto; display: inline-flex;">
+            <i class="fa-solid fa-plus"></i> Add New Product
+          </button>
         </td>
       </tr>
     `;
