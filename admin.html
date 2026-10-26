@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADAH JEWELS — Admin & Stock Management Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <!-- AUTHENTICATION GATE SCREEN -->
+  <div class="auth-gate-overlay" id="authGateOverlay">
+    <div class="auth-gate-card">
+      <div class="auth-brand-badge">
+        <span class="auth-logo-main">ADAH</span>
+        <span class="auth-logo-sub">STUDIO ADMIN PORTAL</span>
+      </div>
+      <div class="auth-card-header">
+        <h2>Private Management Portal</h2>
+        <p>Enter your studio credentials to access inventory & live stock controls.</p>
+      </div>
+
+      <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
+        <div class="form-group" style="text-align: left;">
+          <label class="field-label" for="authUsername">Username</label>
+          <div class="auth-input-wrap">
+            <i class="fa-solid fa-user"></i>
+            <input type="text" id="authUsername" class="input-control" placeholder="Enter username (somya)" required autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group" style="text-align: left; margin-top: 14px;">
+          <label class="field-label" for="authPassword">Password</label>
+          <div class="auth-input-wrap">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" id="authPassword" class="input-control" placeholder="Enter password (gunshika)" required autocomplete="current-password">
+            <button type="button" class="btn-toggle-pw" onclick="toggleAuthPassword()" title="Show/Hide Password">
+              <i class="fa-solid fa-eye" id="pwToggleIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="auth-error-msg" id="authErrorMsg" style="display: none;">
+          <i class="fa-solid fa-circle-exclamation"></i> Invalid username or password. Please try again.
+        </div>
+
+        <button type="submit" class="btn-auth-submit" id="btnAuthSubmit">
+          <i class="fa-solid fa-shield-halved"></i> Sign In to Admin Studio
+        </button>
+      </form>
+
+      <div class="auth-footer-note">
+        <i class="fa-solid fa-lock"></i> Protected Studio Area • Authorized Personnel Only
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN SHELL -->
+  <div class="admin-layout" id="adminMainLayout">
+    
+    <!-- SIDEBAR NAVIGATION -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">
+          <span class="logo-main">ADAH</span>
+          <span class="logo-sub">STUDIO ADMIN</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a href="#overview" class="menu-item active" data-tab="overview">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Overview & KPIs</span>
+        </a>
+        <a href="#inventory" class="menu-item" data-tab="inventory">
+          <i class="fa-solid fa-boxes-stacked"></i>
+          <span>Inventory & Stock</span>
+        </a>
+        <a href="#add-product" class="menu-item" data-tab="add-product">
+          <i class="fa-solid fa-circle-plus"></i>
+          <span>Add New Product</span>
+        </a>
+        <a href="#orders" class="menu-item" data-tab="orders">
+          <i class="fa-solid fa-receipt"></i>
+          <span>Inquiries & Orders</span>
+        </a>
+        <a href="#settings" class="menu-item" data-tab="settings">
+          <i class="fa-solid fa-database"></i>
+          <span>Data & Backup</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="/" target="_blank" class="btn-view-store">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          <span>View Live Storefront</span>
+        </a>
+        <button type="button" class="btn-signout-sidebar" onclick="handleAdminLogout()">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="admin-main">
+      
+      <!-- TOP ADMIN BAR -->
+      <header class="admin-topbar">
+        <div class="topbar-left">
+          <h1 id="pageTitle">Inventory & Stock Dashboard</h1>
+          <p id="pageSubtitle">Real-time product catalogue and stock management</p>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="admin-user-pill">
+            <span class="user-dot"></span>
+            <span>Somya (Admin)</span>
+          </div>
+          <button class="btn-primary-action" onclick="switchAdminTab('add-product')">
+            <i class="fa-solid fa-plus"></i> Add Product
+          </button>
+          <a href="/" target="_blank" class="btn-outline-action" title="Open storefront in new tab">
+            <i class="fa-solid fa-eye"></i> Live Store
+          </a>
+        </div>
+      </header>
+
+      <!-- TAB 1: OVERVIEW & KPIS -->
+      <section class="tab-pane active" id="pane-overview">
+        <!-- KPI METRIC CARDS -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-icon icon-products">
+              <i class="fa-solid fa-gem"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Total Products</span>
+              <h3 class="kpi-value" id="kpiTotalProducts">0</h3>
+              <span class="kpi-trend" id="kpiCategoriesCount">0 Categories</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon icon-stock">
+              <i class="fa-solid fa-boxes-stacked"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Total Units in Stock</span>
+              <h3 class="kpi-value" id="kpiTotalStockUnits">0</h3>
+              <span class="kpi-trend" id="kpiInStockRate">100% In Stock</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon icon-alert">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Out / Low Stock</span>
+              <h3 class="kpi-value" id="kpiLowStockCount">0</h3>
+              <span class="kpi-trend text-alert" id="kpiLowStockNote">Needs reorder</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-icon icon-value">
+              <i class="fa-solid fa-indian-rupee-sign"></i>
+            </div>
+            <div class="kpi-data">
+              <span class="kpi-label">Inventory Valuation</span>
+              <h3 class="kpi-value" id="kpiTotalValue">₹0</h3>
+              <span class="kpi-trend">Estimated retail value</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUICK INVENTORY SNAPSHOT -->
+        <div class="card-panel" style="margin-top: 28px;">
+          <div class="panel-header">
+            <div>
+              <h3>Fast Stock Manager</h3>
+              <p>Quickly adjust stock units or toggle availability for your live store</p>
+            </div>
+            <button class="btn-link" onclick="switchAdminTab('inventory')">View Full Inventory →</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Photo</th>
+                  <th>ID</th>
+                  <th>Product Name</th>
+                  <th>Category</th>
+                  <th>Price</th>
+                  <th>Stock Units</th>
+                  <th>Status</th>
+                  <th>Running Showcase</th>
+                </tr>
+              </thead>
+              <tbody id="quickStockTableBody">
+                <!-- Injected via admin.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: FULL INVENTORY & STOCK MANAGEMENT -->
+      <section class="tab-pane" id="pane-inventory">
+        <div class="card-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Catalogue Inventory & Stock Control</h3>
+              <p>Search, filter, update stock numbers, or edit any product</p>
+            </div>
+            <div class="header-filters">
+              <button class="filter-pill active" onclick="setStockFilter('all', this)">All</button>
+              <button class="filter-pill" onclick="setStockFilter('showcased', this)">Showcased</button>
+              <button class="filter-pill" onclick="setStockFilter('offshowcase', this)">Off Showcase</button>
+              <button class="filter-pill" onclick="setStockFilter('instock', this)">In Stock</button>
+              <button class="filter-pill" onclick="setStockFilter('low', this)">Low Stock (&lt; 5)</button>
+              <button class="filter-pill" onclick="setStockFilter('outofstock', this)">Out of Stock (0)</button>
+            </div>
+          </div>
+
+          <div class="table-search-bar">
+            <div class="search-input-wrap">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="inventorySearch" placeholder="Search by SKU ID, product name, or category...">
+            </div>
+            <select id="categoryFilterSelect" class="select-control" onchange="renderInventoryTable()">
+              <option value="all">All Categories</option>
+              <option value="Necklaces">Necklaces & Pendants</option>
+              <option value="Earrings">Earrings</option>
+              <option value="Bracelets">Bracelets</option>
+              <option value="Rings">Rings</option>
+              <option value="Scrunchies">Scrunchies</option>
+              <option value="Chokers">Chokers</option>
+            </select>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 60px;">Photo</th>
+                  <th style="width: 110px;">Product ID</th>
+                  <th>Product Name & Description</th>
+                  <th style="width: 120px;">Category</th>
+                  <th style="width: 90px;">Price</th>
+                  <th style="width: 140px;">Stock Units</th>
+                  <th style="width: 110px;">Stock Status</th>
+                  <th style="width: 100px;">Showcase</th>
+                  <th style="width: 130px; text-align: right;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="fullInventoryTableBody">
+                <!-- Injected by admin.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: ADD / EDIT PRODUCT STUDIO -->
+      <section class="tab-pane" id="pane-add-product">
+        <div class="card-panel">
+          <div class="panel-header">
+            <div>
+              <h3 id="formSectionTitle">Upload New Jewellery Product</h3>
+              <p>Add product photo, details, price, and stock units. Items go live immediately.</p>
+            </div>
+            <button type="button" class="btn-outline-action" id="cancelEditBtn" style="display: none;" onclick="cancelEditing()">
+              Cancel Editing
+            </button>
+          </div>
+
+          <form id="adminProductForm">
+            <div class="form-layout-2col">
+              
+              <!-- LEFT: PHOTO UPLOAD ZONE -->
+              <div class="form-col-photo">
+                <label class="field-label">Product Photography *</label>
+                
+                <div class="admin-dropzone" id="adminDropzone">
+                  <div class="dropzone-content">
+                    <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+                    <h4>Upload Jewellery Photo</h4>
+                    <p>Drag and drop your photo here, or browse files</p>
+                    <span class="dropzone-hint">Supports PNG, JPG, WEBP, GIF</span>
+                  </div>
+
+                  <input type="file" id="adminFileInput" class="hidden-input" accept="image/*">
+                  
+                  <!-- Live Preview Overlay -->
+                  <div class="preview-overlay" id="previewOverlay">
+                    <img src="" id="photoPreviewImg" alt="Preview">
+                    <button type="button" class="btn-remove-preview" id="btnRemovePreview">
+                      <i class="fa-solid fa-trash"></i> Remove Photo
+                    </button>
+                  </div>
+                </div>
+
+                <div class="divider-text">— OR PASTE IMAGE URL —</div>
+                <div class="url-input-group">
+                  <input type="url" id="adminPhotoUrl" class="input-control" placeholder="https://example.com/jewel.jpg">
+                  <button type="button" class="btn-secondary" id="btnApplyUrl">Apply URL</button>
+                </div>
+              </div>
+
+              <!-- RIGHT: PRODUCT FIELDS -->
+              <div class="form-col-fields">
+                
+                <div class="form-group">
+                  <label class="field-label" for="prodName">Product Name *</label>
+                  <input type="text" id="prodName" class="input-control" placeholder="e.g. Royal Kundan Pearl Drops" required>
+                </div>
+
+                <div class="form-row-3">
+                  <div class="form-group">
+                    <label class="field-label" for="prodId">Product SKU / ID *</label>
+                    <input type="text" id="prodId" class="input-control" placeholder="e.g. AJ-NEW-01" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="field-label" for="prodPrice">Price (₹) *</label>
+                    <input type="number" id="prodPrice" class="input-control" placeholder="120" min="0" step="1" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="field-label" for="prodStock">Stock Units *</label>
+                    <input type="number" id="prodStock" class="input-control" placeholder="15" min="0" step="1" value="10" required>
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="form-group">
+                    <label class="field-label" for="prodCategory">Category *</label>
+                    <select id="prodCategory" class="select-control">
+                      <option value="Necklaces">Necklaces & Pendants</option>
+                      <option value="Earrings">Earrings</option>
+                      <option value="Bracelets">Bracelets & Bangles</option>
+                      <option value="Rings">Rings</option>
+                      <option value="Scrunchies">Scrunchies</option>
+                      <option value="Chokers">Chokers</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="field-label" for="prodTier">Price Tier Badge</label>
+                    <select id="prodTier" class="select-control">
+                      <option value="₹50">₹50 Edit</option>
+                      <option value="₹60">₹60 Edit</option>
+                      <option value="₹100">₹100 Edit</option>
+                      <option value="₹120">₹120 Edit</option>
+                      <option value="Luxury">Luxury Edit</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="field-label" for="prodDesc">Product Description & Materials</label>
+                  <textarea id="prodDesc" class="textarea-control" placeholder="Describe materials, gemstones, styling advice, and care instructions..."></textarea>
+                </div>
+
+                <!-- Toggles -->
+                <div class="toggle-box">
+                  <div class="toggle-text">
+                    <strong>Feature in "Running Products" Showcase</strong>
+                    <p>Item will continuously glide across the top banner of the storefront</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" id="featureInShowcase" checked>
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="toggle-box" style="margin-top: 10px;">
+                  <div class="toggle-text">
+                    <strong>Active Stock Status (In Stock)</strong>
+                    <p>Toggle off to mark as "Sold Out" without deleting</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" id="activeInStock" checked>
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="form-action-buttons">
+                  <button type="submit" class="btn-submit" id="btnSubmitProduct">
+                    <i class="fa-solid fa-sparkles"></i> Publish to Live Storefront
+                  </button>
+                  <button type="button" class="btn-clear" onclick="resetProductForm()">Clear Form</button>
+                </div>
+
+              </div>
+
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB 4: ORDERS & INQUIRIES -->
+      <section class="tab-pane" id="pane-orders">
+        <div class="card-panel">
+          <div class="panel-header">
+            <div>
+              <h3>WhatsApp Orders & Direct Inquiries</h3>
+              <p>Overview of orders placed through the website bag drawer</p>
+            </div>
+            <a href="https://wa.me/918979660550" target="_blank" class="btn-secondary" style="color: #25D366;">
+              <i class="fa-brands fa-whatsapp"></i> Open Store WhatsApp
+            </a>
+          </div>
+
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Order Reference</th>
+                  <th>Customer Channel</th>
+                  <th>Items Included</th>
+                  <th>Estimated Value</th>
+                  <th>Direct Contact</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>#WA-ORDER-101</strong></td>
+                  <td>WhatsApp (+91 8979660550)</td>
+                  <td>Solitaire Crystal Pendant Chain, Daisy Pearl Tops</td>
+                  <td><strong>₹170</strong></td>
+                  <td><a href="https://wa.me/918979660550" target="_blank" style="color: #25D366; font-weight: 600;"><i class="fa-brands fa-whatsapp"></i> Chat</a></td>
+                  <td><span class="badge-status in-stock">Completed</span></td>
+                </tr>
+                <tr>
+                  <td><strong>#WA-ORDER-102</strong></td>
+                  <td>WhatsApp (+91 8979660550)</td>
+                  <td>Blush Crystal Flower Studs, Pastel Tulip Satin Scrunchies</td>
+                  <td><strong>₹170</strong></td>
+                  <td><a href="https://wa.me/918979660550" target="_blank" style="color: #25D366; font-weight: 600;"><i class="fa-brands fa-whatsapp"></i> Chat</a></td>
+                  <td><span class="badge-status in-stock">Completed</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: DATA & BACKUP -->
+      <section class="tab-pane" id="pane-settings">
+        <div class="card-panel">
+          <div class="panel-header">
+            <div>
+              <h3>Database Backup, Export & Restore</h3>
+              <p>Export your full catalogue with stock levels or reset to factory defaults</p>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; padding: 10px 0;">
+            <div class="backup-box">
+              <h4><i class="fa-solid fa-file-export"></i> Export Catalogue JSON</h4>
+              <p>Download a complete snapshot of all products, images, stock quantities, and prices to your computer.</p>
+              <button class="btn-primary-action" onclick="exportCatalogueData()">
+                <i class="fa-solid fa-download"></i> Download JSON Backup
+              </button>
+            </div>
+
+            <div class="backup-box">
+              <h4><i class="fa-solid fa-rotate-left" style="color: #D9534F;"></i> Factory Reset Catalogue</h4>
+              <p>Reset the product database back to the original 34 curated collection items.</p>
+              <button class="btn-outline-action" style="color: #D9534F; border-color: #D9534F;" onclick="resetCatalogueToDefaults()">
+                <i class="fa-solid fa-triangle-exclamation"></i> Reset to Original 34 Items
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- Custom Delete Confirmation Modal -->
+  <div class="confirm-modal-overlay" id="deleteConfirmModal">
+    <div class="confirm-modal-box">
+      <div class="confirm-icon-wrap"><i class="fa-solid fa-trash-can"></i></div>
+      <h3 id="deleteItemTitle">Delete Product</h3>
+      <p id="deleteItemMessage">Are you sure you want to permanently delete this piece from the catalogue?</p>
+      <div class="confirm-modal-actions">
+        <button class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+        <button class="btn-confirm-delete" id="btnExecuteDelete">Yes, Delete Product</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="adminToast">Notification</div>
+
+  <!-- Scripts -->
+  <script src="js/products.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
