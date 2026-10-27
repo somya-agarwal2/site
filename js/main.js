@@ -127,6 +127,11 @@ function initApp() {
       syncWithServer();
     }
   });
+
+  // Multi-laptop real-time live polling (every 4 seconds)
+  setInterval(() => {
+    syncWithServer();
+  }, 4000);
 }
 
 // Master refresh triggered whenever products are added, edited, or removed

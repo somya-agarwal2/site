@@ -106,6 +106,11 @@ function initAdminPortal() {
       syncWithServer();
     }
   });
+
+  // Multi-laptop real-time polling sync (every 4 seconds)
+  setInterval(() => {
+    syncWithServer();
+  }, 4000);
 }
 
 async function syncWithServer() {
@@ -151,8 +156,6 @@ function loadAdminProducts() {
     if (typeof item.inStock !== 'boolean') item.inStock = item.stock > 0;
     if (typeof item.featured !== 'boolean') item.featured = true;
   });
-
-  saveAdminProducts(false);
 }
 
 function initializeFromDefaults() {

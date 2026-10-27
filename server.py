@@ -6,8 +6,9 @@ import json
 import urllib.parse
 
 PORT = 8000
-WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+WEB_DIR = os.path.join(BASE_DIR, "web") if os.path.isdir(os.path.join(BASE_DIR, "web")) else BASE_DIR
+DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 PRODUCTS_FILE = os.path.join(DATA_DIR, "products.json")
 
