@@ -3,7 +3,19 @@
 // "The Everyday Edit" — Storefront, Running Showcase & Shopping Features
 // ==========================================================================
 
-const MASTER_STORAGE_KEY = 'ADAH_MASTER_CATALOGUE';
+const MASTER_STORAGE_KEY = 'ADAH_LIVE_PRODUCTS_V1';
+
+// Guard: Identify and eliminate legacy sample products permanently
+function isOldSampleProduct(item) {
+  if (!item || !item.id) return false;
+  const id = String(item.id).toUpperCase().trim();
+  const prefixes = ['AJ-E50-', 'AJ-E60-', 'AJ-E100-', 'AJ-E120-', 'AJ-P120-', 'AJ-B120-', 'AJ-R120-', 'AJ-S50-'];
+  if (prefixes.some(p => id.startsWith(p)) || id === 'AJ-ADM-01' || id === 'AJ-ROYAL-01' || id === 'AJ-NEW-01') {
+    return true;
+  }
+  return false;
+}
+
 window.allProducts = [];
 let cart = JSON.parse(localStorage.getItem('adah_cart')) || [];
 let wishlist = JSON.parse(localStorage.getItem('adah_wishlist')) || [];
@@ -44,12 +56,17 @@ const toastMessage = document.getElementById('toastMessage');
 // ==========================================================================
 
 window.loadProductsFromStorage = function() {
+  // Purge legacy storage keys completely
+  ['ADAH_MASTER_CATALOGUE', 'adah_custom_products', 'adah_custom_products_v2'].forEach(k => {
+    try { localStorage.removeItem(k); } catch (e) {}
+  });
+
   const saved = localStorage.getItem(MASTER_STORAGE_KEY);
 
   if (saved !== null) {
     try {
       const parsed = JSON.parse(saved);
-      window.allProducts = Array.isArray(parsed) ? parsed : [];
+      window.allProducts = Array.isArray(parsed) ? parsed.filter(p => !isOldSampleProduct(p)) : [];
     } catch (e) {
       window.allProducts = [];
     }
@@ -67,7 +84,7 @@ async function syncWithServer() {
     if (res.ok) {
       const serverProducts = await res.json();
       if (Array.isArray(serverProducts)) {
-        window.allProducts = serverProducts;
+        window.allProducts = serverProducts.filter(p => !isOldSampleProduct(p));
         localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(window.allProducts));
         window.refreshStorefront();
       }

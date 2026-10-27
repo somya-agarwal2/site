@@ -3,7 +3,19 @@
 // Complete E-Commerce Inventory Control, Photo Upload & Stock Editor
 // ==========================================================================
 
-const MASTER_STORAGE_KEY = 'ADAH_MASTER_CATALOGUE';
+const MASTER_STORAGE_KEY = 'ADAH_LIVE_PRODUCTS_V1';
+
+// Guard: Identify and eliminate legacy sample products permanently
+function isOldSampleProduct(item) {
+  if (!item || !item.id) return false;
+  const id = String(item.id).toUpperCase().trim();
+  const prefixes = ['AJ-E50-', 'AJ-E60-', 'AJ-E100-', 'AJ-E120-', 'AJ-P120-', 'AJ-B120-', 'AJ-R120-', 'AJ-S50-'];
+  if (prefixes.some(p => id.startsWith(p)) || id === 'AJ-ADM-01' || id === 'AJ-ROYAL-01' || id === 'AJ-NEW-01') {
+    return true;
+  }
+  return false;
+}
+
 let adminProducts = [];
 let activePhotoData = '';
 let editingItemId = null;
@@ -113,7 +125,7 @@ async function syncWithServer() {
     if (res.ok) {
       const serverProducts = await res.json();
       if (Array.isArray(serverProducts)) {
-        adminProducts = serverProducts;
+        adminProducts = serverProducts.filter(p => !isOldSampleProduct(p));
         localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(adminProducts));
         updateKPIs();
         renderQuickStockTable();
@@ -124,12 +136,17 @@ async function syncWithServer() {
 }
 
 function loadAdminProducts() {
+  // Purge legacy storage keys completely
+  ['ADAH_MASTER_CATALOGUE', 'adah_custom_products', 'adah_custom_products_v2'].forEach(k => {
+    try { localStorage.removeItem(k); } catch (e) {}
+  });
+
   const saved = localStorage.getItem(MASTER_STORAGE_KEY);
 
   if (saved !== null) {
     try {
       const parsed = JSON.parse(saved);
-      adminProducts = Array.isArray(parsed) ? parsed : [];
+      adminProducts = Array.isArray(parsed) ? parsed.filter(p => !isOldSampleProduct(p)) : [];
     } catch (e) {
       adminProducts = [];
     }
@@ -152,10 +169,9 @@ function initializeFromDefaults() {
 }
 
 function saveAdminProducts(notify = true) {
+  adminProducts = adminProducts.filter(p => !isOldSampleProduct(p));
   const jsonStr = JSON.stringify(adminProducts);
   localStorage.setItem(MASTER_STORAGE_KEY, jsonStr);
-  localStorage.setItem('adah_custom_products_v2', jsonStr);
-  localStorage.setItem('adah_custom_products', jsonStr);
 
   if (notify && syncChannel) {
     syncChannel.postMessage({ type: 'CATALOGUE_CHANGED', products: adminProducts, sender: 'admin' });
@@ -773,16 +789,17 @@ window.exportCatalogueData = function() {
   showToast('Catalogue JSON Backup Downloaded');
 };
 
-window.resetCatalogueToDefaults = function() {
-  if (confirm('Warning: This will restore catalogue back to original curated collection items. Continue?')) {
-    adminProducts = initializeFromDefaults();
-    saveAdminProducts();
+window.clearAllCatalogueProducts = function() {
+  if (confirm('Are you sure you want to remove ALL products from your inventory and store? This action cannot be undone.')) {
+    adminProducts = [];
+    saveAdminProducts(true);
     updateKPIs();
     renderQuickStockTable();
     renderInventoryTable();
-    showToast('Catalogue restored to original items');
+    showToast('All inventory items removed permanently.');
   }
 };
+window.resetCatalogueToDefaults = window.clearAllCatalogueProducts;
 
 function showToast(msg) {
   if (!adminToast) return;
