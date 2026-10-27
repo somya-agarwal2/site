@@ -5,17 +5,6 @@
 
 const MASTER_STORAGE_KEY = 'ADAH_LIVE_PRODUCTS_V1';
 
-// Guard: Identify and eliminate legacy sample products permanently
-function isOldSampleProduct(item) {
-  if (!item || !item.id) return false;
-  const id = String(item.id).toUpperCase().trim();
-  const prefixes = ['AJ-E50-', 'AJ-E60-', 'AJ-E100-', 'AJ-E120-', 'AJ-P120-', 'AJ-B120-', 'AJ-R120-', 'AJ-S50-'];
-  if (prefixes.some(p => id.startsWith(p)) || id === 'AJ-ADM-01' || id === 'AJ-ROYAL-01' || id === 'AJ-NEW-01') {
-    return true;
-  }
-  return false;
-}
-
 let adminProducts = [];
 let activePhotoData = '';
 let editingItemId = null;
@@ -125,8 +114,10 @@ async function syncWithServer() {
     if (res.ok) {
       const serverProducts = await res.json();
       if (Array.isArray(serverProducts)) {
-        adminProducts = serverProducts.filter(p => !isOldSampleProduct(p));
-        localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(adminProducts));
+        adminProducts = serverProducts;
+        try {
+          localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(adminProducts));
+        } catch (e) {}
         updateKPIs();
         renderQuickStockTable();
         renderInventoryTable();
@@ -146,7 +137,7 @@ function loadAdminProducts() {
   if (saved !== null) {
     try {
       const parsed = JSON.parse(saved);
-      adminProducts = Array.isArray(parsed) ? parsed.filter(p => !isOldSampleProduct(p)) : [];
+      adminProducts = Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       adminProducts = [];
     }
@@ -169,12 +160,25 @@ function initializeFromDefaults() {
 }
 
 function saveAdminProducts(notify = true) {
-  adminProducts = adminProducts.filter(p => !isOldSampleProduct(p));
   const jsonStr = JSON.stringify(adminProducts);
-  localStorage.setItem(MASTER_STORAGE_KEY, jsonStr);
+  try {
+    localStorage.setItem(MASTER_STORAGE_KEY, jsonStr);
+  } catch (err) {
+    console.warn('localStorage storage quota reached:', err);
+    try {
+      // Fallback: save without oversized image payloads
+      const fallbackItems = adminProducts.map(p => ({
+        ...p,
+        image: (p.image && p.image.length > 500000) ? '' : p.image
+      }));
+      localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(fallbackItems));
+    } catch (e2) {}
+  }
 
   if (notify && syncChannel) {
-    syncChannel.postMessage({ type: 'CATALOGUE_CHANGED', products: adminProducts, sender: 'admin' });
+    try {
+      syncChannel.postMessage({ type: 'CATALOGUE_CHANGED', products: adminProducts, sender: 'admin' });
+    } catch (e) {}
   }
 
   // Backend sync
@@ -648,8 +652,35 @@ function handleImageFile(file) {
   }
   const reader = new FileReader();
   reader.onload = (e) => {
-    setPhotoPreview(e.target.result);
-    showToast('Photo uploaded and preview ready');
+    const rawData = e.target.result;
+    const img = new Image();
+    img.onload = () => {
+      const maxDim = 800;
+      let w = img.width;
+      let h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) {
+          h = Math.round((h * maxDim) / w);
+          w = maxDim;
+        } else {
+          w = Math.round((w * maxDim) / h);
+          h = maxDim;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      const compressedData = canvas.toDataURL('image/jpeg', 0.85);
+      setPhotoPreview(compressedData);
+      showToast('Photo uploaded and preview ready');
+    };
+    img.onerror = () => {
+      setPhotoPreview(rawData);
+      showToast('Photo uploaded and preview ready');
+    };
+    img.src = rawData;
   };
   reader.readAsDataURL(file);
 }
@@ -672,7 +703,7 @@ function updateSuggestedSku() {
   if (editingItemId) return;
   const count = adminProducts.length + 1;
   const pad = count < 10 ? `0${count}` : `${count}`;
-  prodIdInput.value = `AJ-NEW-${pad}`;
+  prodIdInput.value = `ADAH-${pad}`;
 }
 
 function handleFormSubmit(e) {
@@ -728,6 +759,9 @@ function handleFormSubmit(e) {
   updateKPIs();
   renderQuickStockTable();
   renderInventoryTable();
+
+  // Switch to inventory tab so the user immediately sees the piece in the table!
+  switchAdminTab('inventory');
 }
 
 window.editProduct = function(id) {

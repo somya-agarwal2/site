@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "id": "ADAH-01",
+    "name": "Golden Pearl Choker Set",
+    "price": 299,
+    "stock": 12,
+    "inStock": true,
+    "category": "Necklaces",
+    "tier": "Luxury",
+    "image": "",
+    "type": "necklaces",
+    "featured": true,
+    "desc": "Handcrafted imperial golden pearl choker with floral centerpiece."
+  }
+]

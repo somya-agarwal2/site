@@ -5,17 +5,6 @@
 
 const MASTER_STORAGE_KEY = 'ADAH_LIVE_PRODUCTS_V1';
 
-// Guard: Identify and eliminate legacy sample products permanently
-function isOldSampleProduct(item) {
-  if (!item || !item.id) return false;
-  const id = String(item.id).toUpperCase().trim();
-  const prefixes = ['AJ-E50-', 'AJ-E60-', 'AJ-E100-', 'AJ-E120-', 'AJ-P120-', 'AJ-B120-', 'AJ-R120-', 'AJ-S50-'];
-  if (prefixes.some(p => id.startsWith(p)) || id === 'AJ-ADM-01' || id === 'AJ-ROYAL-01' || id === 'AJ-NEW-01') {
-    return true;
-  }
-  return false;
-}
-
 window.allProducts = [];
 let cart = JSON.parse(localStorage.getItem('adah_cart')) || [];
 let wishlist = JSON.parse(localStorage.getItem('adah_wishlist')) || [];
@@ -66,7 +55,7 @@ window.loadProductsFromStorage = function() {
   if (saved !== null) {
     try {
       const parsed = JSON.parse(saved);
-      window.allProducts = Array.isArray(parsed) ? parsed.filter(p => !isOldSampleProduct(p)) : [];
+      window.allProducts = Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       window.allProducts = [];
     }
@@ -75,7 +64,9 @@ window.loadProductsFromStorage = function() {
   }
 
   // Save canonical master
-  localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(window.allProducts));
+  try {
+    localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(window.allProducts));
+  } catch (e) {}
 };
 
 async function syncWithServer() {
@@ -84,8 +75,10 @@ async function syncWithServer() {
     if (res.ok) {
       const serverProducts = await res.json();
       if (Array.isArray(serverProducts)) {
-        window.allProducts = serverProducts.filter(p => !isOldSampleProduct(p));
-        localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(window.allProducts));
+        window.allProducts = serverProducts;
+        try {
+          localStorage.setItem(MASTER_STORAGE_KEY, JSON.stringify(window.allProducts));
+        } catch (e) {}
         window.refreshStorefront();
       }
     }
