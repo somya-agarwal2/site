@@ -11,5 +11,18 @@
     "type": "necklaces",
     "featured": true,
     "desc": "Handcrafted imperial golden pearl choker with floral centerpiece."
+  },
+  {
+    "id": "ADAH-02",
+    "name": "Emerald Crystal Dangler Earrings",
+    "price": 180,
+    "stock": 8,
+    "inStock": true,
+    "category": "Earrings",
+    "tier": "Luxury",
+    "image": "",
+    "type": "earrings",
+    "featured": true,
+    "desc": "Deep emerald green stones framed in vintage gold filigree."
   }
 ]
